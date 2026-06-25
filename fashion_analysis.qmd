@@ -1,0 +1,666 @@
+# Project Title:
+Fashion Recommendation and Purchase Behavior Analytics
+
+# Main Goal:
+This project analyzes user behavior, fashion product attributes, engagement metrics, and recommendation scores to understand what factors are related to purchase behavior.
+
+# Section 1
+# Research Questions:
+ 1. What user groups are more likely to purchase fashion items?
+ 2. Which product attributes are associated with higher purchase rates?
+ 3. How does user engagement relate to purchase behavior?
+ 4. Which fashion scores are most related to purchases?
+ 5. Can users be segmented into different shopper groups?
+ 6. Can machine learning models predict whether a user will purchase an item?
+
+# Limitation:
+This dataset can show associations, but it cannot prove causality.
+
+# Section 2: Load Dataset
+```{python}
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+df = pd.read_csv("fashion_dataset_complete.csv")
+
+print("Dataset shape:", df.shape)
+print(df.head())
+print(df.info())
+
+
+```
+
+# Section 3: Data Cleaning
+```{python}
+
+df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
+
+df["year"] = df["timestamp"].dt.year
+df["day"] = df["timestamp"].dt.day
+df["dayofweek"] = df["timestamp"].dt.dayofweek
+
+print("Missing values:")
+print(df.isnull().sum())
+
+print("Target distribution:")
+print(df["purchased"].value_counts())
+print(df["purchased"].value_counts(normalize=True))
+
+```
+
+# Section 4: Research Question 1 — User Purchase Behavior
+```{python}
+
+# RQ1:
+# What user groups are more likely to purchase fashion items?
+
+user_features = [
+    "gender",
+    "age_group",
+    "body_type",
+    "skin_tone",
+    "height",
+    "style_preference",
+    "budget_level"
+]
+
+for col in user_features:
+    print("\nPurchase rate by", col)
+    result = df.groupby(col)["purchased"].mean().sort_values(ascending=False)
+    print(result)
+
+```
+
+Among gender groups, Non-binary users showed the highest purchase rate (16.5%), followed by Female users (15.4%) and Male users (15.3%). Gender-fluid users had the lowest purchase rate (14.0%). However, the differences across gender categories were relatively small, suggesting that gender may not be a major driver of purchase decisions.
+
+For age groups, customers aged 35–44 exhibited the highest purchase rate (17.1%), while users aged 55 and above had the lowest purchase rate (14.1%). This indicates that middle-aged customers may be more likely to engage in fashion purchases than younger or older age groups.
+
+Body type analysis showed that Rectangle body type users had the highest purchase rate (16.9%), whereas Athletic body type users had the lowest purchase rate (14.0%). Although differences exist, purchase behavior appears relatively consistent across body types.
+
+Regarding skin tone, Olive (16.4%) and Tan (16.1%) skin tone groups demonstrated slightly higher purchase rates compared to Light skin tone users (14.1%). The variation remains moderate and may reflect dataset-specific patterns rather than strong behavioral differences.
+
+For height categories, users between 5'3" and 5'5" achieved the highest purchase rate (16.1%), while users between 5'0" and 5'2" had the lowest purchase rate (14.4%). Height appears to have only a limited impact on purchasing behavior.
+
+Style preference showed more noticeable differences. Customers with a Classic style preference recorded the highest purchase rate (17.0%), while users preferring Edgy fashion had the lowest purchase rate (14.2%). This suggests that classic fashion styles may have broader appeal and stronger purchase intent within the dataset.
+
+Budget level produced one of the most interesting findings. Budget shoppers had the highest purchase rate (16.1%), followed by Mid-range customers (16.0%) and Luxury shoppers (15.6%). Premium customers recorded the lowest purchase rate (13.6%). This result suggests that lower-priced products may encourage more frequent purchases, while higher-priced products may lead to more cautious purchasing behavior.
+
+# Section 5: Visualize User Purchase Rates
+```{python}
+
+for col in ["gender", "age_group", "budget_level", "style_preference"]:
+    purchase_rate = df.groupby(col)["purchased"].mean().sort_values(ascending=False)
+    
+    plt.figure(figsize=(8, 4))
+    purchase_rate.plot(kind="bar")
+    plt.title(f"Purchase Rate by {col}")
+    plt.ylabel("Purchase Rate")
+    plt.xlabel(col)
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+```
+
+
+
+
+# Section 6: Research Question 2 — Product Attribute Analysis
+```{python}
+# RQ2:
+# Which product attributes are associated with higher purchase rates?
+
+product_features = [
+    "preferred_brand",
+    "clothing_type",
+    "fabric",
+    "primary_color",
+    "pattern",
+    "occasion",
+    "season",
+    "weather"
+]
+
+for col in product_features:
+    print("\nPurchase rate by", col)
+    result = df.groupby(col)["purchased"].mean().sort_values(ascending=False)
+    print(result.head(10))
+
+
+```
+
+
+The product attribute analysis shows that purchase rates vary slightly across different fashion characteristics.
+
+H&M (17.1%), Prada (16.3%), and Balmain (15.7%) were the top three brands with the highest purchase rates. For clothing types, Sweaters (16.9%), T-shirts (16.8%), and Dresses (16.6%) ranked highest. Among fabrics, Velvet (16.3%), Wool (16.3%), and Cotton (15.8%) achieved the highest purchase rates.
+
+For colors, Brown (17.2%), White (17.0%), and Black (16.4%) were the most frequently purchased. Solid (16.2%), Plaid (16.2%), and Striped (16.0%) were the top three pattern types. In terms of occasions, Party (17.0%), Brunch (16.7%), and Gym (15.9%) outfits recorded the highest purchase rates.
+
+Season and weather showed relatively small differences. Summer (15.7%) had the highest purchase rate among seasons, while Sunny (15.7%), Cloudy (15.6%), and Rainy (15.1%) were the top three weather conditions.
+
+Overall, clothing type, color, fabric, and occasion showed moderate differences in purchase rates, while season and weather had only a limited impact on purchasing behavior.
+
+
+
+
+# Section 7: Product Attribute Visualization
+```{python}
+
+for col in ["clothing_type", "fabric", "primary_color", "occasion"]:
+    purchase_rate = df.groupby(col)["purchased"].mean().sort_values(ascending=False).head(10)
+    
+    plt.figure(figsize=(9, 4))
+    purchase_rate.plot(kind="bar")
+    plt.title(f"Top Purchase Rates by {col}")
+    plt.ylabel("Purchase Rate")
+    plt.xlabel(col)
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+
+```
+
+
+
+
+# Section 8: Research Question 3 — Engagement Analysis
+```{python}
+
+# RQ3:
+# How does user engagement relate to purchase behavior?
+
+engagement_features = [
+    "views",
+    "likes",
+    "shares",
+    "saves",
+    "tryon_count"
+]
+
+engagement_summary = df.groupby("purchased")[engagement_features].mean()
+print(engagement_summary)
+
+engagement_summary.T.plot(kind="bar", figsize=(8, 5))
+plt.title("Average Engagement Metrics by Purchase Status")
+plt.ylabel("Average Value")
+plt.xlabel("Engagement Metric")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+
+```
+
+The average engagement metrics were very similar between purchased and non-purchased items. Purchased items had a slightly higher average try-on count (8.03 vs. 7.98), while non-purchased items had slightly higher average views (100.04 vs. 99.82), likes (19.94 vs. 19.89), shares (5.00 vs. 4.96), and saves (10.04 vs. 9.95).
+
+Overall, the differences were very small, suggesting that individual engagement metrics alone may not strongly distinguish purchased items from non-purchased items. Combining multiple features through machine learning models may provide better predictive performance than relying on any single engagement metric.
+
+
+# Section 9: Engagement Correlation
+```{python}
+
+engagement_corr = df[engagement_features + ["purchased"]].corr()
+print(engagement_corr["purchased"].sort_values(ascending=False))
+
+plt.figure(figsize=(6, 4))
+engagement_corr["purchased"].drop("purchased").sort_values().plot(kind="barh")
+plt.title("Correlation Between Engagement Metrics and Purchase")
+plt.xlabel("Correlation")
+plt.tight_layout()
+plt.show()
+
+```
+
+The engagement analysis showed that purchased and non-purchased items had very similar average values for views, likes, shares, saves, and try-on count. Correlation analysis also indicated that all engagement metrics had very weak relationships with purchase behavior. Among them, try-on count had the highest positive correlation with purchases (0.007), while saves (-0.010), views (-0.008), shares (-0.007), and likes (-0.004) showed very weak negative correlations.
+
+Overall, the correlation coefficients were all close to zero, suggesting that individual engagement metrics have little linear relationship with purchase behavior in this dataset. Therefore, engagement metrics alone are unlikely to accurately predict purchases and should be combined with other customer and product features in machine learning models.
+
+
+
+# Section 10: Research Question 4 — Fashion Score Analysis
+```{python}
+
+# RQ4:
+# Which fashion scores are most related to purchase behavior?
+
+score_features = [
+    "satisfaction_score",
+    "trend_score",
+    "comfort_score",
+    "sustainability_score",
+    "quality_score",
+    "fit_score",
+    "total_score"
+]
+
+score_summary = df.groupby("purchased")[score_features].mean()
+print(score_summary)
+
+score_summary.T.plot(kind="bar", figsize=(9, 5))
+plt.title("Average Fashion Scores by Purchase Status")
+plt.ylabel("Average Score")
+plt.xlabel("Score Feature")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+```
+
+The average product scores were very similar between purchased and non-purchased items. Purchased items had slightly higher trend score (0.502), comfort score (0.654), quality score (0.711), and total score (0.627). Non-purchased items had slightly higher satisfaction score (0.647), sustainability score (0.505), and fit score (0.750).
+
+Overall, the differences were very small, indicating that no individual product score has a strong relationship with purchase behavior. These features are likely to be more useful when combined with other variables in machine learning models.
+
+
+# Section 11: Score Correlation
+```{python}
+score_corr = df[score_features + ["purchased"]].corr()
+print(score_corr["purchased"].sort_values(ascending=False))
+
+plt.figure(figsize=(7, 4))
+score_corr["purchased"].drop("purchased").sort_values().plot(kind="barh")
+plt.title("Correlation Between Fashion Scores and Purchase")
+plt.xlabel("Correlation")
+plt.tight_layout()
+plt.show()
+
+
+```
+
+Correlation analysis also showed very weak relationships between product scores and purchase behavior. Quality score had the highest positive correlation with purchases (0.017), followed by total score (0.009) and trend score (0.008). Sustainability score (-0.012), satisfaction score (-0.008), and fit score (-0.001) showed weak negative correlations.
+
+Overall, all correlation coefficients were close to zero, indicating that individual product scores have little linear relationship with purchase behavior. These variables are expected to contribute more effectively when combined with other customer and product features in machine learning models.
+
+
+# Section 12: Research Question 5 — Recommendation Priority Evaluation
+```{python}
+# RQ5:
+# Does recommendation priority identify items with higher purchase rates?
+
+priority_analysis = df.groupby("recommendation_priority").agg(
+    purchase_rate=("purchased", "mean"),
+    average_total_score=("total_score", "mean"),
+    average_price=("price_usd", "mean"),
+    count=("purchased", "count")
+).sort_values(by="purchase_rate", ascending=False)
+
+print(priority_analysis)
+
+priority_analysis["purchase_rate"].plot(kind="bar", figsize=(7, 4))
+plt.title("Purchase Rate by Recommendation Priority")
+plt.ylabel("Purchase Rate")
+plt.xlabel("Recommendation Priority")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+
+```
+
+
+The recommendation analysis showed that High priority items had the highest purchase rate (15.6%), followed by Medium priority items (15.0%) and Top Priority items (14.4%). Although Top Priority products had the highest average total score (0.840), they did not achieve the highest purchase rate. High priority items also had a similar average price to Top Priority items but generated more purchases.
+
+The Low priority category contained only two observations, so it was excluded from the interpretation due to the extremely small sample size.
+
+Overall, recommendation priority alone does not appear to have a strong relationship with purchase behavior. Other customer, product, and engagement features should also be considered when predicting purchases.
+
+
+# Section 13: Research Question 6 — Customer Segmentation with K-Means
+```{python}
+
+# RQ6:
+# Can users be grouped into different shopper segments?
+
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+
+cluster_features = [
+    "price_usd",
+    "views",
+    "likes",
+    "shares",
+    "saves",
+    "tryon_count",
+    "satisfaction_score",
+    "trend_score",
+    "comfort_score",
+    "sustainability_score",
+    "quality_score",
+    "fit_score",
+    "total_score"
+]
+
+cluster_data = df[cluster_features].copy()
+scaler = StandardScaler()
+cluster_scaled = scaler.fit_transform(cluster_data)
+
+silhouette_scores = []
+
+for k in range(2, 8):
+    kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+    labels = kmeans.fit_predict(cluster_scaled)
+    score = silhouette_score(cluster_scaled, labels)
+    silhouette_scores.append((k, score))
+
+silhouette_df = pd.DataFrame(silhouette_scores, columns=["k", "silhouette_score"])
+print(silhouette_df)
+
+best_k = silhouette_df.sort_values(by="silhouette_score", ascending=False).iloc[0]["k"]
+best_k = int(best_k)
+
+print("Best k:", best_k)
+
+```
+
+K-Means clustering was performed with values of k ranging from 2 to 7. The highest Silhouette Score was obtained when k = 2 (0.097), indicating that two clusters provided the best clustering performance among the tested values.
+
+However, the Silhouette Scores for all models were relatively low, suggesting that the dataset does not contain strong natural customer segments. This indicates that customer behavior is relatively similar across the dataset, making it difficult to separate users into clearly distinct groups based on the selected features.
+
+Although k = 2 was selected as the optimal number of clusters, the clustering results should be interpreted as exploratory customer segments rather than well-defined customer groups.
+
+
+# Section 14: Final Clustering Model
+```{python}
+
+kmeans = KMeans(n_clusters=best_k, random_state=42, n_init=10)
+df["cluster"] = kmeans.fit_predict(cluster_scaled)
+
+cluster_summary = df.groupby("cluster").agg(
+    purchase_rate=("purchased", "mean"),
+    avg_price=("price_usd", "mean"),
+    avg_views=("views", "mean"),
+    avg_likes=("likes", "mean"),
+    avg_saves=("saves", "mean"),
+    avg_tryon=("tryon_count", "mean"),
+    avg_total_score=("total_score", "mean"),
+    count=("purchased", "count")
+)
+
+print(cluster_summary)
+
+```
+
+Cluster 0 contained 5,388 customers, while Cluster 1 contained 5,112 customers. The two clusters showed very similar purchase rates (15.3% vs. 15.4%), average prices, and engagement metrics, including views, likes, saves, and try-on counts. The main difference was that Cluster 1 had a higher average total score (0.718) than Cluster 0 (0.536).
+
+Overall, the clustering results suggest that the dataset does not contain strong natural customer segments. Although two clusters were identified, the differences between them were relatively small, indicating that customer behavior is fairly consistent across the dataset.
+
+
+# Section 15: Cluster Visualization
+```{python}
+cluster_summary["purchase_rate"].plot(kind="bar", figsize=(7, 4))
+plt.title("Purchase Rate by Customer Cluster")
+plt.ylabel("Purchase Rate")
+plt.xlabel("Cluster")
+plt.tight_layout()
+plt.show()
+
+cluster_summary[["avg_price", "avg_views", "avg_likes", "avg_saves", "avg_tryon"]].plot(
+    kind="bar",
+    figsize=(10, 5)
+)
+plt.title("Customer Segment Profile")
+plt.ylabel("Average Value")
+plt.xlabel("Cluster")
+plt.xticks(rotation=0)
+plt.tight_layout()
+plt.show()
+
+
+```
+
+
+# Section 16: Machine Learning Preparation
+```{python}
+
+# RQ7:
+# Can machine learning models predict whether a user will purchase an item?
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+
+drop_cols = [
+    "user_id",
+    "session_id",
+    "timestamp",
+    "outfit_description",
+    "purchased"
+]
+
+X = df.drop(columns=drop_cols)
+y = df["purchased"]
+
+categorical_features = X.select_dtypes(include=["object"]).columns.tolist()
+numeric_features = X.select_dtypes(include=["int64", "float64"]).columns.tolist()
+
+print("Categorical features:", categorical_features)
+print("Numeric features:", numeric_features)
+
+preprocessor = ColumnTransformer(
+    transformers=[
+        ("num", StandardScaler(), numeric_features),
+        ("cat", OneHotEncoder(handle_unknown="ignore"), categorical_features)
+    ]
+)
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
+)
+
+```
+
+
+# Section 17: Build Multiple Classification Models
+```{python}
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+
+models = {
+    "Logistic Regression": LogisticRegression(max_iter=1000, class_weight="balanced"),
+    
+    "Decision Tree": DecisionTreeClassifier(
+        random_state=42,
+        class_weight="balanced",
+        max_depth=8
+    ),
+    
+    "Random Forest": RandomForestClassifier(
+        n_estimators=300,
+        random_state=42,
+        class_weight="balanced",
+        max_depth=None
+    ),
+    
+    "Gradient Boosting": GradientBoostingClassifier(
+        random_state=42
+    )
+}
+
+results = []
+
+trained_pipelines = {}
+
+for name, model in models.items():
+    pipeline = Pipeline(steps=[
+        ("preprocessor", preprocessor),
+        ("model", model)
+    ])
+    
+    pipeline.fit(X_train, y_train)
+    
+    y_pred = pipeline.predict(X_test)
+    y_prob = pipeline.predict_proba(X_test)[:, 1]
+    
+    results.append({
+        "Model": name,
+        "Accuracy": accuracy_score(y_test, y_pred),
+        "Precision": precision_score(y_test, y_pred, zero_division=0),
+        "Recall": recall_score(y_test, y_pred, zero_division=0),
+        "F1 Score": f1_score(y_test, y_pred, zero_division=0),
+        "ROC AUC": roc_auc_score(y_test, y_prob)
+    })
+    
+    trained_pipelines[name] = pipeline
+
+results_df = pd.DataFrame(results).sort_values(by="ROC AUC", ascending=False)
+print(results_df)
+
+
+```
+
+Four machine learning models were developed to predict whether a customer would purchase a fashion item, including Logistic Regression, Decision Tree, Random Forest, and Gradient Boosting.
+
+Gradient Boosting achieved the highest ROC AUC (0.515), followed by Random Forest (0.513). However, all models produced ROC AUC values close to 0.50, indicating that their predictive performance was only slightly better than random guessing.
+
+Although Random Forest and Gradient Boosting achieved relatively high accuracy (84.7%), this result was mainly due to the imbalanced dataset, where approximately 85% of observations belonged to the non-purchased class. Therefore, accuracy alone is not an appropriate measure of model performance.
+
+Overall, the results suggest that the dataset contains very weak predictive signals. Individual customer characteristics, product attributes, engagement metrics, and product scores showed limited relationships with purchase behavior, making accurate prediction difficult using the available features.
+
+
+# Section 19: Select Best Model
+```{python}
+
+best_model_name = results_df.iloc[0]["Model"]
+best_pipeline = trained_pipelines[best_model_name]
+
+print("Best Model:", best_model_name)
+
+y_pred_best = best_pipeline.predict(X_test)
+y_prob_best = best_pipeline.predict_proba(X_test)[:, 1]
+
+```
+
+Best Model: Gradient Boosting
+
+
+# Section 20: Final Model Evaluation
+```{python}
+
+from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay, RocCurveDisplay
+
+print("Classification Report:")
+print(classification_report(y_test, y_pred_best, zero_division=0))
+
+print("Confusion Matrix:")
+print(confusion_matrix(y_test, y_pred_best))
+
+ConfusionMatrixDisplay.from_predictions(y_test, y_pred_best)
+plt.title(f"Confusion Matrix - {best_model_name}")
+plt.tight_layout()
+plt.show()
+
+RocCurveDisplay.from_predictions(y_test, y_prob_best)
+plt.title(f"ROC Curve - {best_model_name}")
+plt.tight_layout()
+plt.show()
+
+
+```
+
+The classification report and confusion matrix indicate that the final model performed well in identifying the majority class (Not Purchased) but failed to correctly identify the minority class (Purchased).
+
+The model achieved an overall accuracy of 84.7%, which appears high because the dataset is highly imbalanced, with approximately 85% of observations belonging to the non-purchased class. However, the recall for the purchased class was only 0.3%, meaning that only 1 out of 322 purchased items was correctly identified. As a result, the F1-score for the purchased class was also very low (0.01).
+
+The confusion matrix further confirmed this result, with 1,777 correctly classified non-purchased items but only 1 correctly classified purchased item. These findings indicate that the model was heavily biased toward predicting the majority class.
+
+Overall, the machine learning models showed limited predictive performance, suggesting that the available features contain weak signals for distinguishing purchased and non-purchased items.
+
+
+# Section 21: Feature Importance
+```{python}
+
+feature_names = best_pipeline.named_steps["preprocessor"].get_feature_names_out()
+model = best_pipeline.named_steps["model"]
+
+if hasattr(model, "feature_importances_"):
+    importance_values = model.feature_importances_
+
+elif hasattr(model, "coef_"):
+    importance_values = abs(model.coef_[0])
+
+else:
+    importance_values = None
+
+if importance_values is not None:
+    importance_df = pd.DataFrame({
+        "Feature": feature_names,
+        "Importance": importance_values
+    }).sort_values(by="Importance", ascending=False)
+
+    print(importance_df.head(20))
+
+    plt.figure(figsize=(10, 6))
+    plt.barh(
+        importance_df.head(15)["Feature"][::-1],
+        importance_df.head(15)["Importance"][::-1]
+    )
+    plt.title(f"Top 15 Important Features - {best_model_name}")
+    plt.xlabel("Importance")
+    plt.ylabel("Feature")
+    plt.tight_layout()
+    plt.show()
+
+else:
+    print("Feature importance is not available for this model.")
+
+```
+
+The feature importance analysis shows that embedding_3, embedding_2, quality_score, fit_score, total_score, and price_usd were among the most influential features used by the machine learning model. Other relatively important features included embedding_1, satisfaction_score, comfort_score, sustainability_score, likes, trend_score, and views.
+
+Among the categorical variables, body_type (Athletic), preferred_brand (H&M), and primary_color (Brown) ranked among the most important features. However, their importance values were considerably lower than those of the numerical features.
+
+Although these variables contributed the most to the model, the overall predictive performance remained weak. Therefore, feature importance reflects the model's relative use of these variables rather than indicating a strong relationship with purchase behavior.
+
+
+# ction 22: Purchase Probability Prediction Output
+```{python}
+
+prediction_output = X_test.copy()
+prediction_output["actual_purchase"] = y_test.values
+prediction_output["predicted_purchase"] = y_pred_best
+prediction_output["purchase_probability"] = y_prob_best
+
+prediction_output = prediction_output.sort_values(
+    by="purchase_probability",
+    ascending=False
+)
+
+print(prediction_output.head(20))
+
+```
+
+
+# Section 23: Export Results
+```{python}
+
+results_df.to_csv("model_comparison_results.csv", index=False)
+cluster_summary.to_csv("customer_cluster_summary.csv")
+prediction_output.to_csv("purchase_probability_predictions.csv", index=False)
+
+print("Files exported successfully:")
+print("model_comparison_results.csv")
+print("customer_cluster_summary.csv")
+print("purchase_probability_predictions.csv")
+
+```
+
+
+## Final Conclusion
+
+This project analyzed a fashion recommendation dataset to understand customer purchase behavior through exploratory data analysis, customer segmentation, and machine learning.
+
+The exploratory analysis showed that demographic characteristics, product attributes, engagement metrics, and product scores had only small differences in purchase rates. Correlation analysis also indicated very weak relationships between individual features and purchase behavior. K-Means clustering identified two customer segments, but the overall cluster separation was weak, suggesting that customer behavior was relatively similar across the dataset.
+
+Several machine learning models, including Logistic Regression, Decision Tree, Random Forest, and Gradient Boosting, were developed to predict purchase behavior. Although Gradient Boosting achieved the best overall performance, all models produced ROC AUC values close to 0.50, indicating limited predictive ability. This suggests that the available features contain weak predictive signals for distinguishing purchased and non-purchased items.
+
+Overall, this project demonstrates the importance of combining exploratory analysis with machine learning evaluation. While the dataset provided useful insights into customer behavior, stronger predictive performance would likely require additional behavioral, transactional, or historical customer data.
